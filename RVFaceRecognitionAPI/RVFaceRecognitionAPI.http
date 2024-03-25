@@ -1,0 +1,6 @@
+@RVFaceRecognitionAPI_HostAddress = http://localhost:5147
+
+GET {{RVFaceRecognitionAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
