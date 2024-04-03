@@ -1,72 +1,76 @@
-﻿using Emgu.CV;
-using Emgu.CV.Structure;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.RegularExpressions;
+using RVFaceRecognitionAPI.Services;
 
 namespace RVFaceRecognitionAPI.Contollers
 {
     [Produces("application/json")]
     [ApiController]
+    [Authorize]
     [Route("api/cameras")]
     public class CamerasController : Controller
     {
-        private VideoCapture _videoCapture;
-        private Mat _frame;
+        SteamService _streamService;
 
         // Конструктор для инициализации контроллера
-        public CamerasController()
+        public CamerasController(SteamService streamService)
         {
-            _videoCapture = new VideoCapture(); // Инициализация камеры
-            _videoCapture.ImageGrabbed += ProcessFrame;
-            _videoCapture.Start();
+            _streamService = streamService;
         }
 
-        // Метод для обработки кадров и возвращения потока
-        private void ProcessFrame(object sender, EventArgs e)
+        // GET api/cameras/start-stream
+        /// <summary>
+        /// Метод для получения кода доступа к потоку изображений
+        /// </summary>
+        /// <param name="guid">Уникальный код для его обновления</param>
+        /// <returns>Уникальный код доступа к потоку изображений</returns>
+        [HttpGet]
+        [ProducesResponseType(200)]
+        [Route("start-stream")]
+        public IActionResult StartCameraStream(Guid? guid = null)
         {
-            if (_videoCapture != null && _videoCapture.Ptr != IntPtr.Zero)
+            Guid streamGuid = _streamService.StartImageStream(guid);
+            return Ok(streamGuid);
+        }
+
+        // GET api/cameras/frames
+        /// <summary>
+        /// Метод для получения изображений от видеокамеры
+        /// </summary>
+        /// <param name="guid">Уникальный код потока</param>
+        /// <returns>Бесконечный поток байтов кадров</returns>
+        [HttpGet]
+        [Route("frames")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult> Images(Guid guid)
+        {
+            Response.ContentType = "text/plain; charset=utf-8";
+            int responseCode = await _streamService.StreamImageToAsync(Response.Body, guid);
+        
+            switch(responseCode)
             {
-                _frame = new Mat();
-                _videoCapture.Retrieve(_frame, 0);
+                case 404:
+                    return NotFound();
+                case 200:
+                    return Ok();
+                default:
+                    return BadRequest(responseCode);
             }
         }
 
-        // Метод для получения бесконечного потока кадров из данной камеры
-        [HttpGet("CameraStream")]
-        public IActionResult CameraStream()
+        // POST api/cameras/stope-stream
+        /// <summary>
+        /// Метод для остановки потока
+        /// </summary>
+        /// <param name="guid">Уникальный код потока</param>
+        [HttpPost]
+        [Route("stope-stream")]
+        [ProducesResponseType(200)]
+        public IActionResult StopCameraStream(Guid guid)
         {
-            if (_frame != null)
-            {
-                var image = _frame.ToImage<Bgr, Byte>().ToBitmap();
-                var imageStream = ImageToStream(image);
-                return File(imageStream, "image/jpeg");
-            }
-            else
-            {
-                return NotFound("No frames available");
-            }
-        }
-
-        // Метод для преобразования изображения в поток для возврата клиенту
-        private static byte[] ImageToStream(System.Drawing.Image image)
-        {
-            using (var ms = new MemoryStream())
-            {
-                image.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-                return ms.ToArray();
-            }
-        }
-
-        // Переопределение метода Dispose для освобождения ресурсов
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _videoCapture?.Stop(); // Остановка камеры
-                _videoCapture?.Dispose(); // Освобождение ресурсов камеры
-                _frame?.Dispose();
-            }
-            base.Dispose(disposing);
+            _streamService.StopImageStream(guid);
+            return Ok();
         }
     }
 }
