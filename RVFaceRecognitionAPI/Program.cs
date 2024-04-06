@@ -6,16 +6,16 @@ using RVFaceRecognitionAPI.Models;
 using System.Reflection;
 using System.Text;
 using RVFaceRecognitionAPI.Services;
+using System.Net.WebSockets;
 
 internal class Program
 {
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var streamService = new SteamService();
 
         // Add services to the container.
-        builder.Services.AddSingleton<SteamService>();
-
         builder.Services.AddControllers();
         builder.Services.AddDbContext<UsersContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
@@ -96,6 +96,30 @@ internal class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        var webSocketOptions = new WebSocketOptions
+        {
+            KeepAliveInterval = TimeSpan.FromMinutes(2)
+        };
+
+        webSocketOptions.AllowedOrigins.Add("http://localhost:8080");
+
+        app.UseWebSockets(webSocketOptions);
+        app.Use(async (context, next) =>
+        {
+            if (context.WebSockets.IsWebSocketRequest)
+            {
+                Console.WriteLine("Start sending the frames...");
+                WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+                var cancellationToken = context.RequestAborted;
+                await streamService.SendImageToWebSocket(webSocket, cancellationToken);
+            }
+            else
+            {
+                await next();
+            }
+        });
 
         app.MapControllers();
 

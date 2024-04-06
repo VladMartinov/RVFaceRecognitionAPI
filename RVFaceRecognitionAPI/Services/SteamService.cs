@@ -2,134 +2,124 @@
 using Emgu.CV;
 
 using System.Drawing.Imaging;
-using System.Text;
-
-using RVFaceRecognitionAPI.Models;
-using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
+using System.Drawing;
+using System.Reflection;
+using Emgu.CV.CvEnum;
 
 namespace RVFaceRecognitionAPI.Services
 {
     public class SteamService
     {
         #region - Variables -
-        private readonly Dictionary<Guid, StreamInfo> _streamTasks;
         private readonly VideoCapture _videoCapture;
-        
-        private Mat _frame;
+        private readonly Mat _frame;
+
+        private readonly CascadeClassifier _faceCascadeClassifier;
         #endregion
 
         public SteamService()
         {
-            _streamTasks = new Dictionary<Guid, StreamInfo>();
             _videoCapture = new VideoCapture();
 
             _videoCapture.ImageGrabbed += ProcessFrame;
             _videoCapture.Start();
+
+            _frame = new Mat();
+
+            _faceCascadeClassifier = new CascadeClassifier(
+                ExtractResourceToFile(
+                    "RVFaceRecognitionAPI.Resources.haarcascade_frontalface_alt.xml",
+                    "haarcascade_frontalface_alt.xml"
+                )
+            );
         }
 
         #region - Public Functions -
-        public Guid StartImageStream(Guid? guid = null)
+        public async Task SendImageToWebSocket(WebSocket webSocket, CancellationToken cancellationToken)
         {
-            var now = DateTime.UtcNow;
-            var keysToRemove = _streamTasks.Where(kvp => now.Subtract(kvp.Value.DateLastAccess).TotalHours >= 1)
-                                           .Select(kvp => kvp.Key)
-                                           .ToList();
-
-            foreach (var key in keysToRemove)
+            while (webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
             {
-                _streamTasks.Remove(key);
-            }
-
-            if (guid != null && _streamTasks.ContainsKey((Guid) guid))
-            {
-                _streamTasks[(Guid) guid].DateLastAccess = DateTime.UtcNow;
-
-                return (Guid) guid;
-            }
-
-            var streamGuid = Guid.NewGuid();
-            var cancellationTokenSource = new CancellationTokenSource();
-            var streamInfo = new StreamInfo { CancellationTokenSource = cancellationTokenSource, DateLastAccess = DateTime.UtcNow };
-
-            _streamTasks.Add(streamGuid, streamInfo);
-
-            return streamGuid;
-        }
-
-        public void StopImageStream(Guid streamGuid)
-        {
-            if (_streamTasks.ContainsKey(streamGuid))
-            {
-                _streamTasks[streamGuid].CancellationTokenSource.Cancel();
-                _streamTasks.Remove(streamGuid);
-            }
-        }
-
-        public async Task<int> StreamImageToAsync(Stream stream, Guid guid)
-        {
-            StreamInfo info = _streamTasks.ContainsKey(guid) ? _streamTasks[guid] : null;
-
-            if (info is null || DateTime.UtcNow.Subtract(info.DateLastAccess).TotalHours >= 1) return 404;
-
-            while (_frame is null)
-                await Task.Delay(100);
-
-            await Task.Yield(); // отдаем управление другим задачам
-
-            List<Task> tasks = new List<Task>();
-
-            while (!info.CancellationTokenSource.IsCancellationRequested)
-            {
-                Mat currentFrame = _frame.Clone();
-                info.DateLastAccess = DateTime.UtcNow;
-
-                if (currentFrame.NumberOfChannels != 3)
-                {
-                    await Task.Delay(100);
+                if (_frame.NumberOfChannels != 3)
                     continue;
+
+                using (var ms = new MemoryStream())
+                {
+                    // Memory leak
+                    // _frame.ToImage<Bgr, byte>().ToBitmap().Save(ms, ImageFormat.Jpeg);
+
+                    // Fix memory leak, but performance drop
+                    // image = null;
+                    // bitmap = null;
+                    // GC.Collect();
+
+                    // The best way to fix memory leaks and normal performance
+                    Image<Bgr, byte> image = _frame.ToImage<Bgr, byte>();
+
+                    // Start recognition faces on image
+                    var grayImage = new Mat();
+                    CvInvoke.CvtColor(image, grayImage, ColorConversion.Bgr2Gray);
+
+                    CvInvoke.EqualizeHist(grayImage, grayImage);
+
+                    Rectangle[] faces = _faceCascadeClassifier.DetectMultiScale(grayImage, 1.1, 3, Size.Empty, Size.Empty);
+
+                    if (faces.Length > 0)
+                    {
+                        foreach (var face in faces)
+                        {
+                            CvInvoke.Rectangle(image, face, new Bgr(Color.Red).MCvScalar, 2);
+                        }
+                    }
+                    // End recognition faces on image
+
+                    Bitmap bitmap = image.ToBitmap();
+
+                    bitmap.Save(ms, ImageFormat.Jpeg);
+
+                    grayImage.Dispose();
+                    image.Dispose();
+                    bitmap.Dispose();
+
+                    byte[] imageData = ms.ToArray();
+                    await webSocket.SendAsync(new ArraySegment<byte>(imageData, 0, imageData.Length), WebSocketMessageType.Binary, true, CancellationToken.None);
                 }
 
-                Task task = Task.Run(async () =>
-                {
-                    using (var ms = new MemoryStream())
-                    {
-                        currentFrame.ToImage<Bgr, byte>()
-                            .ToBitmap()
-                            .Save(ms, ImageFormat.Jpeg);
-
-                        byte[] imageData = ms.ToArray();
-
-                        await WriteValueToStream(stream, string.Empty, imageData);
-                    }
-                });
-
-                tasks.Add(task);
+                await Task.Delay(50, cancellationToken);
             }
-
-            await Task.WhenAll(tasks);
-            return 200;
         }
         #endregion
 
         #region - Private Functions -
-        private async Task WriteValueToStream(Stream stream, string value, byte[]? valueAsBytes = null)
-        {
-            valueAsBytes ??= Encoding.UTF8.GetBytes(value);
-            
-            await stream.WriteAsync(valueAsBytes, 0, valueAsBytes.Length);
-            await stream.FlushAsync();
-        }
-
         private async void ProcessFrame(object sender, EventArgs e)
         {
             if (_videoCapture != null && _videoCapture.Ptr != IntPtr.Zero)
             {
-                _frame = new Mat();
                 await Task.Run(() =>
                 {
                     _videoCapture.Retrieve(_frame, 0);
                 });
             }
+        }
+
+        private string ExtractResourceToFile(string resourceName, string fileName)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourceStream = assembly.GetManifestResourceStream(resourceName);
+
+            if (resourceStream == null)
+            {
+                throw new Exception($"Resource {resourceName} not found.");
+            }
+
+            var filePath = Path.Combine(Path.GetTempPath(), fileName);
+
+            using (var fileStream = File.Create(filePath))
+            {
+                resourceStream.CopyTo(fileStream);
+            }
+
+            return filePath;
         }
         #endregion
     }
