@@ -6,12 +6,17 @@ using System.Net.WebSockets;
 using System.Drawing;
 using System.Reflection;
 using Emgu.CV.CvEnum;
+using System.IO;
+using Microsoft.IdentityModel.Tokens;
 
 namespace RVFaceRecognitionAPI.Services
 {
     public class SteamService
     {
         #region - Variables -
+        private bool _isGetFace;
+        private string _detectedFace;
+
         private readonly VideoCapture _videoCapture;
         private readonly Mat _frame;
 
@@ -20,6 +25,8 @@ namespace RVFaceRecognitionAPI.Services
 
         public SteamService()
         {
+            _isGetFace = false;
+
             _videoCapture = new VideoCapture();
 
             _videoCapture.ImageGrabbed += ProcessFrame;
@@ -45,14 +52,6 @@ namespace RVFaceRecognitionAPI.Services
 
                 using (var ms = new MemoryStream())
                 {
-                    // Memory leak
-                    // _frame.ToImage<Bgr, byte>().ToBitmap().Save(ms, ImageFormat.Jpeg);
-
-                    // Fix memory leak, but performance drop
-                    // image = null;
-                    // bitmap = null;
-                    // GC.Collect();
-
                     // The best way to fix memory leaks and normal performance
                     Image<Bgr, byte> image = _frame.ToImage<Bgr, byte>();
 
@@ -66,6 +65,31 @@ namespace RVFaceRecognitionAPI.Services
 
                     if (faces.Length > 0)
                     {
+                        if (_isGetFace)
+                        {
+                            _isGetFace = false;
+
+                            Image<Bgr, byte> imageToSave = image.Clone();
+
+                            // Создайте новое изображение только с областью лица
+                            Image<Bgr, byte> croppedImage = new Image<Bgr, byte>(faces[0].Size);
+                            imageToSave.ROI = faces[0];
+                            imageToSave.CopyTo(croppedImage);
+
+                            // Сохраните изображение в MemoryStream
+                            using (var msSaveFace = new MemoryStream())
+                            {
+                                Bitmap bitmapToSave = croppedImage.ToBitmap();
+                                bitmapToSave.Save(msSaveFace, ImageFormat.Jpeg);
+
+                                imageToSave.Dispose();
+                                croppedImage.Dispose();
+                                bitmapToSave.Dispose();
+
+                                _detectedFace = Convert.ToBase64String(msSaveFace.ToArray());
+                            }
+                        }
+
                         foreach (var face in faces)
                         {
                             CvInvoke.Rectangle(image, face, new Bgr(Color.Red).MCvScalar, 2);
@@ -87,6 +111,31 @@ namespace RVFaceRecognitionAPI.Services
 
                 await Task.Delay(50, cancellationToken);
             }
+        }
+
+        public async Task<string> GetFirstDetectedFace()
+        {
+            DateTime startTime = DateTime.UtcNow;
+            string face = string.Empty;
+            
+            _isGetFace = true;
+            _detectedFace = string.Empty;
+
+            while ((DateTime.UtcNow - startTime).TotalSeconds < 10)
+            {
+                if (!_detectedFace.IsNullOrEmpty())
+                {
+                    face = _detectedFace;
+                    break;
+                }
+
+                await Task.Delay(500);
+            }
+
+            _isGetFace = false;
+            _detectedFace = string.Empty;
+
+            return face;
         }
         #endregion
 

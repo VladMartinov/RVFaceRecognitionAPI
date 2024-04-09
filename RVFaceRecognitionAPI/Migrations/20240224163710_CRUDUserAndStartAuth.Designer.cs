@@ -10,7 +10,7 @@ using RVFaceRecognitionAPI.Models;
 
 namespace RVFaceRecognitionAPI.Migrations
 {
-    [DbContext(typeof(UsersContext))]
+    [DbContext(typeof(ApplicationContext))]
     [Migration("20240224163710_CRUDUserAndStartAuth")]
     partial class CRUDUserAndStartAuth
     {

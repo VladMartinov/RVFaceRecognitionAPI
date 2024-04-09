@@ -11,9 +11,9 @@ namespace RVFaceRecognitionAPI.Contollers
     [Route("api/users")]
     public class UsersController : Controller
     {
-        private readonly UsersContext _context;
+        private readonly ApplicationContext _context;
 
-        public UsersController(UsersContext context)
+        public UsersController(ApplicationContext context)
         {
             _context = context;
         }
@@ -115,7 +115,7 @@ namespace RVFaceRecognitionAPI.Contollers
                 UserRole = userCUDto.UserRole,
                 UserStatus = userCUDto.UserStatus,
                 FullName = userCUDto.FullName,
-                Photo = userCUDto.Photo,
+                Photo = userCUDto.Photo is not null ? Convert.FromBase64String(userCUDto.Photo) : null,
                 Login = userCUDto.Login,
                 Password = BCrypt.Net.BCrypt.HashPassword(userCUDto.Password)
             };
@@ -151,7 +151,7 @@ namespace RVFaceRecognitionAPI.Contollers
             userToUpdate.UserStatus = userCUDto.UserStatus;
             
             userToUpdate.FullName = userCUDto.FullName;
-            userToUpdate.Photo = userCUDto.Photo;
+            userToUpdate.Photo = userCUDto.Photo is not null ? Convert.FromBase64String(userCUDto.Photo) : null;
 
             userToUpdate.Login = userCUDto.Login;
 
@@ -180,6 +180,31 @@ namespace RVFaceRecognitionAPI.Contollers
             if (user == null) return NotFound("User by this ID not founded");
 
             user.UserStatus = (ushort) UserStatusEnum.Removed;
+            await _context.SaveChangesAsync();
+
+            var userDto = new UserDto(user);
+
+            return Ok(userDto);
+        }
+
+        // PUT api/users/{id}/status
+        /// <summary>
+        /// Обновление статуса пользователя
+        /// </summary>
+        /// <param name="id">Уникальный идентификатор удаляемого пользователя</param>
+        /// <param name="status">Код статуса</param>
+        /// <returns>Обновленный пользователь системы</returns>
+        [HttpPut("{id}/status")]
+        [ProducesResponseType(typeof(UserDto), 201)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> UpdateUserStatu(uint id, ushort status)
+        {
+            var user = _context.Users.SingleOrDefault(u => u.UserId == id);
+
+            if (user == null) return NotFound("User by this ID not founded");
+
+            user.UserStatus = status;
             await _context.SaveChangesAsync();
 
             var userDto = new UserDto(user);

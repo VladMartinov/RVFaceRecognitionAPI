@@ -11,7 +11,7 @@ using RVFaceRecognitionAPI.Models;
 
 namespace RVFaceRecognitionAPI.Migrations
 {
-    [DbContext(typeof(UsersContext))]
+    [DbContext(typeof(ApplicationContext))]
     [Migration("20240225160710_AddJwtRefreshTokenCols")]
     partial class AddJwtRefreshTokenCols
     {

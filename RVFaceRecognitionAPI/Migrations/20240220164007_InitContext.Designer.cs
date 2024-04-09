@@ -10,7 +10,7 @@ using RVFaceRecognitionAPI.Models;
 
 namespace RVFaceRecognitionAPI.Migrations
 {
-    [DbContext(typeof(UsersContext))]
+    [DbContext(typeof(ApplicationContext))]
     [Migration("20240220164007_InitContext")]
     partial class InitContext
     {

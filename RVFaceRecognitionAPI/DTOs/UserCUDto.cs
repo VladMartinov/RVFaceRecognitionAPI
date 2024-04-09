@@ -6,7 +6,7 @@
         public ushort UserStatus { get; set; }
 
         public string FullName { get; set; }
-        public byte[]? Photo { get; set; }
+        public string? Photo { get; set; }
 
         public string Login { get; set; }
         public string Password { get; set; }
@@ -17,7 +17,7 @@
             UserStatus = user.UserStatus;
 
             FullName = user.FullName;
-            Photo = user.Photo;
+            Photo = user.Photo is not null ? Convert.ToBase64String(user.Photo) : null;
 
             Login = user.Login;
             Password = user.Password;

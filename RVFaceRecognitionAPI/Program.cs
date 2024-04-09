@@ -17,7 +17,8 @@ internal class Program
 
         // Add services to the container.
         builder.Services.AddControllers();
-        builder.Services.AddDbContext<UsersContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+        builder.Services.AddSingleton(streamService); // Регистрация SteamService в контейнере DI
+        builder.Services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
         builder.Services.AddTransient<IAuthService, AuthService>();
 

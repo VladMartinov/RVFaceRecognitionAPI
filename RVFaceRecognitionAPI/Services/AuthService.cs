@@ -10,10 +10,10 @@ namespace RVFaceRecognitionAPI.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly UsersContext _usersContext;
+        private readonly ApplicationContext _usersContext;
         private readonly IConfiguration _configuration;
 
-        public AuthService(UsersContext usersContext, IConfiguration configuration)
+        public AuthService(ApplicationContext usersContext, IConfiguration configuration)
         {
             _usersContext = usersContext;
             _configuration = configuration;
@@ -24,7 +24,12 @@ namespace RVFaceRecognitionAPI.Services
             var response = new LoginResponse();
             var identityUser = _usersContext.Users.FirstOrDefault(u => u.Login == user.Login);
 
-            if (identityUser == null || !BCrypt.Net.BCrypt.Verify(user.Password, identityUser.Password)) return response;
+            if (
+                identityUser == null
+                || identityUser.UserStatus == (short) UserStatusEnum.Blocked
+                || identityUser.UserStatus == (short) UserStatusEnum.Removed
+                || !BCrypt.Net.BCrypt.Verify(user.Password, identityUser.Password)
+                ) return response;
 
             response.IsLoggedIn = true;
 
@@ -49,7 +54,13 @@ namespace RVFaceRecognitionAPI.Services
 
             var identityUser = await _usersContext.Users.FirstOrDefaultAsync(u => u.Login == principal.Identity.Name);
 
-            if (identityUser is null || identityUser.RefreshToken != model.RefreshToken || identityUser.RefreshTokenExpiry < DateTime.UtcNow)
+            if (
+                identityUser is null
+                || identityUser.UserStatus == (short) UserStatusEnum.Blocked
+                || identityUser.UserStatus == (short) UserStatusEnum.Removed
+                || identityUser.RefreshToken != model.RefreshToken
+                || identityUser.RefreshTokenExpiry < DateTime.UtcNow
+                )
                 return response;
 
             response.IsLoggedIn = true;

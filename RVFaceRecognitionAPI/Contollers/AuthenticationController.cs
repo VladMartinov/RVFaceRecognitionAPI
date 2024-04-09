@@ -11,12 +11,12 @@ namespace RVFaceRecognitionAPI.Contollers
     [Route("api/authentication")]
     public class AuthenticationController : Controller
     {
-        private readonly UsersContext _userContext;
+        private readonly ApplicationContext _applicationContext;
         private readonly IAuthService _authService;
 
-        public AuthenticationController(UsersContext userContext, IAuthService authService)
+        public AuthenticationController(ApplicationContext userContext, IAuthService authService)
         {
-            _userContext = userContext;
+            _applicationContext = userContext;
             _authService = authService;
         }
 
@@ -113,7 +113,7 @@ namespace RVFaceRecognitionAPI.Contollers
         [ProducesResponseType(404)]
         public IActionResult UserExistenceCheck(CheckUserDto checkUser)
         {
-            var user = _userContext.Users.FirstOrDefault(u => u.Login == checkUser.Login);
+            var user = _applicationContext.Users.FirstOrDefault(u => u.Login == checkUser.Login);
 
             if (user == null) return NotFound("User with this login not found");
             else return Ok();
@@ -129,13 +129,13 @@ namespace RVFaceRecognitionAPI.Contollers
         [ProducesResponseType(404)]
         public async Task<IActionResult> ChangeUserPassword(LoginUser userCreds)
         {
-            var user = _userContext.Users.FirstOrDefault(u => u.Login == userCreds.Login);
+            var user = _applicationContext.Users.FirstOrDefault(u => u.Login == userCreds.Login);
             if (user == null) return NotFound("User with this login not found");
 
             if (!string.IsNullOrWhiteSpace(userCreds.Password))
             {
                 user.Password = BCrypt.Net.BCrypt.HashPassword(userCreds.Password);
-                await _userContext.SaveChangesAsync();
+                await _applicationContext.SaveChangesAsync();
             }
 
             return Ok();

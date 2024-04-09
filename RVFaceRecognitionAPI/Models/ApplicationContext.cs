@@ -2,9 +2,9 @@
 
 namespace RVFaceRecognitionAPI.Models
 {
-    public class UsersContext : DbContext
+    public class ApplicationContext : DbContext
     {
-        public UsersContext(DbContextOptions<UsersContext> options) : base(options)
+        public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options)
         {
             
         }
@@ -24,6 +24,7 @@ namespace RVFaceRecognitionAPI.Models
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<Image> Images { get; set; }
         /*
         public DbSet<UserStatus> UserStatuses { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
