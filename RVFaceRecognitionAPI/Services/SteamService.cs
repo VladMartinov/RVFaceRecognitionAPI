@@ -6,8 +6,10 @@ using System.Net.WebSockets;
 using System.Drawing;
 using System.Reflection;
 using Emgu.CV.CvEnum;
-using System.IO;
 using Microsoft.IdentityModel.Tokens;
+using RVFaceRecognitionAPI.Models;
+using Emgu.CV.Face;
+using Emgu.CV.Util;
 
 namespace RVFaceRecognitionAPI.Services
 {
@@ -17,15 +19,27 @@ namespace RVFaceRecognitionAPI.Services
         private bool _isGetFace;
         private string _detectedFace;
 
+        private readonly ApplicationContext _context;
+
         private readonly VideoCapture _videoCapture;
         private readonly Mat _frame;
 
+        private List<int> _personsLabes;
+        private List<string> _personsNames;
+        private List<Image<Gray, Byte>> _trainedFaces;
+
         private readonly CascadeClassifier _faceCascadeClassifier;
+        private EigenFaceRecognizer? _recognizer;
+
+        private int _maxWidth;
+        private int _maxHeight;
         #endregion
 
-        public SteamService()
+        public SteamService(IServiceProvider serviceProvider)
         {
             _isGetFace = false;
+
+            _context = serviceProvider.GetRequiredService<ApplicationContext>();
 
             _videoCapture = new VideoCapture();
 
@@ -34,12 +48,18 @@ namespace RVFaceRecognitionAPI.Services
 
             _frame = new Mat();
 
+            _personsLabes = new List<int>();
+            _personsNames = new List<string>();
+            _trainedFaces = new List<Image<Gray, Byte>>();
+
             _faceCascadeClassifier = new CascadeClassifier(
                 ExtractResourceToFile(
                     "RVFaceRecognitionAPI.Resources.haarcascade_frontalface_alt.xml",
                     "haarcascade_frontalface_alt.xml"
                 )
             );
+
+            TrainByImagesFromDataBase();
         }
 
         #region - Public Functions -
@@ -93,6 +113,41 @@ namespace RVFaceRecognitionAPI.Services
                         foreach (var face in faces)
                         {
                             CvInvoke.Rectangle(image, face, new Bgr(Color.Red).MCvScalar, 2);
+
+                            /* Recognize the face */
+                            if (_recognizer is not null)
+                            {
+                                /* Add Persone */
+                                Image<Bgr, byte> resultImage = image.Convert<Bgr, byte>();
+                                resultImage.ROI = face;
+
+                                Image<Gray, byte> grayFaceResult = resultImage.Convert<Gray, byte>().Resize(_maxWidth, _maxHeight, Inter.Cubic);
+                                
+                                CvInvoke.EqualizeHist(grayFaceResult, grayFaceResult);
+                                
+                                var result = _recognizer.Predict(grayFaceResult);
+
+                                /* - Here results found known faces - */
+                                if (result.Label != -1 && result.Distance < 50000)
+                                {
+                                    CvInvoke.PutText(image, _personsNames[result.Label], new Point(face.X - 2, face.Y - 2),
+                                        FontFace.HersheyComplex, 1.0, new Bgr(Color.Orange).MCvScalar);
+
+                                    CvInvoke.Rectangle(image, face, new Bgr(Color.Green).MCvScalar, 2);
+                                }
+                                /* - Here results did not found any know faces - */
+                                else
+                                {
+                                    CvInvoke.PutText(image, "Unknown", new Point(face.X - 2, face.Y - 2),
+                                        FontFace.HersheyComplex, 1.0, new Bgr(Color.Orange).MCvScalar);
+
+                                    CvInvoke.Rectangle(image, face, new Bgr(Color.Red).MCvScalar, 2);
+                                }
+
+                                resultImage.Dispose();
+                                grayFaceResult.Dispose();
+                            }
+
                         }
                     }
                     // End recognition faces on image
@@ -108,8 +163,6 @@ namespace RVFaceRecognitionAPI.Services
                     byte[] imageData = ms.ToArray();
                     await webSocket.SendAsync(new ArraySegment<byte>(imageData, 0, imageData.Length), WebSocketMessageType.Binary, true, CancellationToken.None);
                 }
-
-                await Task.Delay(50, cancellationToken);
             }
         }
 
@@ -169,6 +222,88 @@ namespace RVFaceRecognitionAPI.Services
             }
 
             return filePath;
+        }
+
+        private void TrainByImagesFromDataBase()
+        {
+            if (_recognizer is not null)
+            {
+                _recognizer.Dispose();
+                _recognizer = null;
+            }
+
+            foreach (var image in _trainedFaces)
+                image.Dispose();
+
+            _personsLabes.Clear();
+            _personsNames.Clear();
+            _trainedFaces.Clear();
+
+            var imagePathFiles = new List<string>();
+
+            _maxWidth = 0;
+            _maxHeight = 0;
+
+            foreach (var image in _context.Images)
+            {
+                // Save the image file to a temporary path
+                _personsNames.Add(image.FullName);
+
+                string tempImagePath = Path.GetTempFileName();
+                File.WriteAllBytes(tempImagePath, image.Photo);
+                imagePathFiles.Add(tempImagePath);
+
+                // Read the image file using Emgu.
+                var trainedImage = new Image<Bgr, byte>(tempImagePath);
+
+                if (trainedImage.Width > _maxWidth)
+                    _maxWidth = trainedImage.Width;
+
+                if (trainedImage.Height > _maxHeight)
+                    _maxHeight = trainedImage.Height;
+
+                trainedImage.Dispose();
+            }
+
+            try
+            {
+                for (int i = 0; i < imagePathFiles.Count; i++)
+                {
+                    // Read the image file using Emgu.
+                    var trainedImage = new Image<Bgr, byte>(imagePathFiles[i]);
+
+                    // Resize the image to the largest dimensions
+                    trainedImage = trainedImage.Resize(_maxWidth, _maxHeight, Inter.Cubic);
+
+                    // Convert the image to Gray scale
+                    Image<Gray, byte> grayImage = trainedImage.Convert<Gray, byte>();
+
+                    CvInvoke.EqualizeHist(grayImage, grayImage);
+
+                    _trainedFaces.Add(grayImage);
+                    _personsLabes.Add(i);
+                }
+
+                if (_trainedFaces.Count() > 0)
+                {
+                    // Main function. We will train recognizer on the images and set the border
+                    _recognizer = new EigenFaceRecognizer(_trainedFaces.Count);
+
+                    var vectorOfLabels = new VectorOfInt();
+                    var vectorOfFaces = new VectorOfMat();
+
+                    vectorOfLabels.Push(_personsLabes.ToArray());
+                    vectorOfFaces.Push(_trainedFaces.ToArray());
+
+                    _recognizer.Train(vectorOfFaces, vectorOfLabels);
+                }
+
+                return;
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
         }
         #endregion
     }

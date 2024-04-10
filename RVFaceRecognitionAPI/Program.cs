@@ -13,12 +13,15 @@ internal class Program
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-        var streamService = new SteamService();
 
         // Add services to the container.
         builder.Services.AddControllers();
-        builder.Services.AddSingleton(streamService); // Регистрация SteamService в контейнере DI
         builder.Services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+        ServiceProvider serviceProvider = builder.Services.BuildServiceProvider();
+
+        var streamService = new SteamService(serviceProvider);
+        builder.Services.AddSingleton(streamService); // Регистрация SteamService в контейнере DI
 
         builder.Services.AddTransient<IAuthService, AuthService>();
 
