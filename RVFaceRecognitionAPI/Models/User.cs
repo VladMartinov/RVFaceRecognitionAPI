@@ -34,5 +34,7 @@ namespace RVFaceRecognitionAPI.Models
 
         public string? RefreshToken {  get; set; }
         public DateTime RefreshTokenExpiry { get; set; }
+
+        public ICollection<HistoryRecord> HistoryRecords { get; set; }
     }
 }

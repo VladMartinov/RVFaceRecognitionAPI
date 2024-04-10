@@ -23,8 +23,12 @@ namespace RVFaceRecognitionAPI.Models
             base.OnModelCreating(modelBuilder);
         }
 
+        public DbSet<TypeAction> TypeActions { get; set; }
+
         public DbSet<User> Users { get; set; }
         public DbSet<Image> Images { get; set; }
+
+        public DbSet<HistoryRecord> HistoryRecords { get; set; }
         /*
         public DbSet<UserStatus> UserStatuses { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
