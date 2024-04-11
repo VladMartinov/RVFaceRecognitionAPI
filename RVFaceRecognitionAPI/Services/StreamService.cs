@@ -13,7 +13,7 @@ using Emgu.CV.Util;
 
 namespace RVFaceRecognitionAPI.Services
 {
-    public class SteamService
+    public class StreamService : IStreamService
     {
         #region - Variables -
         private bool _isGetFace;
@@ -26,7 +26,7 @@ namespace RVFaceRecognitionAPI.Services
 
         private List<int> _personsLabes;
         private List<string> _personsNames;
-        private List<Image<Gray, Byte>> _trainedFaces;
+        private List<Image<Gray, byte>> _trainedFaces;
 
         private readonly CascadeClassifier _faceCascadeClassifier;
         private EigenFaceRecognizer? _recognizer;
@@ -35,7 +35,7 @@ namespace RVFaceRecognitionAPI.Services
         private int _maxHeight;
         #endregion
 
-        public SteamService(IServiceProvider serviceProvider)
+        public StreamService(IServiceProvider serviceProvider)
         {
             _isGetFace = false;
 

@@ -68,7 +68,12 @@ namespace RVFaceRecognitionAPI.Migrations
             migrationBuilder.InsertData(
                 table: "TypeActions",
                 columns: new[] { "ActionId", "ActionDescription" },
-                values: new object[] { 9, "Удаление пользователя" });
+                values: new object[] { 9, "Обновление пароля" });
+
+            migrationBuilder.InsertData(
+                table: "TypeActions",
+                columns: new[] { "ActionId", "ActionDescription" },
+                values: new object[] { 10, "Удаление пользователя" });
 
             migrationBuilder.CreateTable(
                 name: "HistoryRecords",

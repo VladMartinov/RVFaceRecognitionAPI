@@ -12,7 +12,8 @@ namespace RVFaceRecognitionAPI.Models
         CreateUser = 6,
         UpdateUser = 7,
         ChangeUserStatus = 8,
-        DeleteUser = 9,
+        UpdateUserPassword = 9,
+        DeleteUser = 10,
     }
 
     public class TypeAction

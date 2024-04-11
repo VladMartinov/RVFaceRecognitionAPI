@@ -1,5 +1,4 @@
-﻿using Azure;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RVFaceRecognitionAPI.DTOs;
 using RVFaceRecognitionAPI.Models;
 using RVFaceRecognitionAPI.Services;
@@ -13,11 +12,13 @@ namespace RVFaceRecognitionAPI.Contollers
     {
         private readonly ApplicationContext _applicationContext;
         private readonly IAuthService _authService;
+        private readonly ILoggingService _loggingService;
 
-        public AuthenticationController(ApplicationContext userContext, IAuthService authService)
+        public AuthenticationController(ApplicationContext applicationContext, IAuthService authService, ILoggingService loggingService)
         {
-            _applicationContext = userContext;
+            _applicationContext = applicationContext;
             _authService = authService;
+            _loggingService = loggingService;
         }
 
         private void AddCookie(string key, string value)
@@ -47,6 +48,8 @@ namespace RVFaceRecognitionAPI.Contollers
 
             if (!result.IsLoggedIn) return Unauthorized();
 
+            await _loggingService.AddHistoryRecordAsync(result.User, TypeActionEnum.Authorisation);
+
             AddCookie("AccessToken", result.JwtToken);
             AddCookie("RefreshToken", result.RefreshToken);
 
@@ -60,7 +63,7 @@ namespace RVFaceRecognitionAPI.Contollers
         [HttpPost("logout")]
         [ProducesResponseType(302)]
         [ProducesResponseType(401)]
-        public IActionResult AuthenticateUser()
+        public async Task<IActionResult> AuthenticateUserAsync()
         {
             var model = new RefreshTokenModel
             {
@@ -69,6 +72,14 @@ namespace RVFaceRecognitionAPI.Contollers
             };
 
             if (String.IsNullOrEmpty(model.JwtToken) || String.IsNullOrEmpty(model.RefreshToken)) return Unauthorized();
+
+            string login = _loggingService.GetUserLoginFromToken(model.JwtToken);
+
+            if (login is not null)
+            {
+                var user = _applicationContext.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(user, TypeActionEnum.LoggingOut);
+            }
 
             HttpContext.Response.Cookies.Delete("AccessToken");
             HttpContext.Response.Cookies.Delete("RefreshToken");
@@ -135,7 +146,8 @@ namespace RVFaceRecognitionAPI.Contollers
             if (!string.IsNullOrWhiteSpace(userCreds.Password))
             {
                 user.Password = BCrypt.Net.BCrypt.HashPassword(userCreds.Password);
-                await _applicationContext.SaveChangesAsync();
+
+                await _loggingService.AddHistoryRecordAsync(user, TypeActionEnum.UpdateUserPassword);
             }
 
             return Ok();

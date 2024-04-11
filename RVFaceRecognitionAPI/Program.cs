@@ -19,10 +19,10 @@ internal class Program
         builder.Services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
         ServiceProvider serviceProvider = builder.Services.BuildServiceProvider();
+        var streamService = new StreamService(serviceProvider);
 
-        var streamService = new SteamService(serviceProvider);
         builder.Services.AddSingleton(streamService); // Регистрация SteamService в контейнере DI
-
+        builder.Services.AddScoped<ILoggingService, LoggingService>();
         builder.Services.AddTransient<IAuthService, AuthService>();
 
         builder.Services.AddAuthentication(options =>

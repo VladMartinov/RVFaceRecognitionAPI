@@ -11,9 +11,9 @@ namespace RVFaceRecognitionAPI.Contollers
     [Route("api/cameras")]
     public class CamerasController : Controller
     {
-        private readonly SteamService _streamService;
+        private readonly StreamService _streamService;
 
-        public CamerasController(SteamService streamService)
+        public CamerasController(StreamService streamService)
         {
             _streamService = streamService;
         }

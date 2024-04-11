@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RVFaceRecognitionAPI.DTOs;
 using RVFaceRecognitionAPI.Models;
+using RVFaceRecognitionAPI.Services;
 
 namespace RVFaceRecognitionAPI.Contollers
 {
@@ -12,10 +13,12 @@ namespace RVFaceRecognitionAPI.Contollers
     public class UsersController : Controller
     {
         private readonly ApplicationContext _context;
+        private readonly ILoggingService _loggingService;
 
-        public UsersController(ApplicationContext context)
+        public UsersController(ApplicationContext context, ILoggingService loggingService)
         {
             _context = context;
+            _loggingService = loggingService;
         }
 
         // GET api/users
@@ -121,7 +124,18 @@ namespace RVFaceRecognitionAPI.Contollers
             };
 
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var currentUser = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(currentUser, TypeActionEnum.CreateUser);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var createdUserDto = new UserDto(user);
             return CreatedAtAction(nameof(CreateUser), new { id = user.UserId }, createdUserDto);
@@ -157,7 +171,17 @@ namespace RVFaceRecognitionAPI.Contollers
 
             if (!string.IsNullOrWhiteSpace(userCUDto.Password)) userToUpdate.Password = BCrypt.Net.BCrypt.HashPassword(userCUDto.Password);
 
-            await _context.SaveChangesAsync();
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var currentUser = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(currentUser, TypeActionEnum.UpdateUser);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var updatedUserDto = new UserCUDto(userToUpdate);
             return Ok(updatedUserDto);
@@ -180,7 +204,18 @@ namespace RVFaceRecognitionAPI.Contollers
             if (user == null) return NotFound("User by this ID not founded");
 
             user.UserStatus = (ushort) UserStatusEnum.Removed;
-            await _context.SaveChangesAsync();
+
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var currentUser = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(currentUser, TypeActionEnum.DeleteUser);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var userDto = new UserDto(user);
 
@@ -205,7 +240,18 @@ namespace RVFaceRecognitionAPI.Contollers
             if (user == null) return NotFound("User by this ID not founded");
 
             user.UserStatus = status;
-            await _context.SaveChangesAsync();
+
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var currentUser = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(currentUser, TypeActionEnum.ChangeUserStatus);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var userDto = new UserDto(user);
 

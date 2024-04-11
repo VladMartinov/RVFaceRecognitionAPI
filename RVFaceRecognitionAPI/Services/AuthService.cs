@@ -41,6 +41,8 @@ namespace RVFaceRecognitionAPI.Services
             identityUser.RefreshTokenExpiry = DateTime.UtcNow.AddHours(12);
             await _usersContext.SaveChangesAsync();
 
+            response.User = identityUser;
+
             return response;
         }
 

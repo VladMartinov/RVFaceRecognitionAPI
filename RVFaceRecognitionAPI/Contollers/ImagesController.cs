@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RVFaceRecognitionAPI.DTOs;
 using RVFaceRecognitionAPI.Models;
+using RVFaceRecognitionAPI.Services;
 
 namespace RVFaceRecognitionAPI.Contollers
 {
@@ -12,10 +13,12 @@ namespace RVFaceRecognitionAPI.Contollers
     public class ImagesController : Controller
     {
         private readonly ApplicationContext _context;
+        private readonly ILoggingService _loggingService;
 
-        public ImagesController(ApplicationContext context)
+        public ImagesController(ApplicationContext context, ILoggingService loggingService)
         {
             _context = context;
+            _loggingService = loggingService;
         }
 
         // GET api/images
@@ -82,7 +85,18 @@ namespace RVFaceRecognitionAPI.Contollers
             };
 
             _context.Images.Add(newImage);
-            await _context.SaveChangesAsync();
+
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var user = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(user, TypeActionEnum.CreateImage);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var createdImageDto = new ImageDto(newImage);
             return CreatedAtAction(nameof(CreateImage), new { id = newImage.ImageId }, createdImageDto);
@@ -110,7 +124,17 @@ namespace RVFaceRecognitionAPI.Contollers
 
             imageToUpdate.DateUpdate = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var user = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(user, TypeActionEnum.UpdateImage);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var updatedImageDto = new ImageDto(imageToUpdate);
             return Ok(updatedImageDto);
@@ -132,7 +156,18 @@ namespace RVFaceRecognitionAPI.Contollers
             if (image == null) return NotFound("Image by this ID not founded");
 
             _context.Images.Remove(image);
-            await _context.SaveChangesAsync();
+
+            string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
+
+            if (login is not null)
+            {
+                var user = _context.Users.FirstOrDefault(u => u.Login == login);
+                await _loggingService.AddHistoryRecordAsync(user, TypeActionEnum.DeleteImage);
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             return Ok();
         }
