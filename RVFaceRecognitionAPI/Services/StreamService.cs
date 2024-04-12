@@ -128,7 +128,7 @@ namespace RVFaceRecognitionAPI.Services
                                 var result = _recognizer.Predict(grayFaceResult);
 
                                 /* - Here results found known faces - */
-                                if (result.Label != -1 && result.Distance < 50000)
+                                if (result.Label != -1 && result.Distance < 8500)
                                 {
                                     CvInvoke.PutText(image, _personsNames[result.Label], new Point(face.X - 2, face.Y - 2),
                                         FontFace.HersheyComplex, 1.0, new Bgr(Color.Orange).MCvScalar);
@@ -264,6 +264,9 @@ namespace RVFaceRecognitionAPI.Services
 
                 trainedImage.Dispose();
             }
+
+            if (_maxWidth % 2 != 0) _maxWidth -= 1;
+            if (_maxHeight % 2 != 0) _maxHeight -= 1;
 
             try
             {
