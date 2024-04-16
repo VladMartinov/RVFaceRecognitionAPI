@@ -34,7 +34,7 @@ namespace RVFaceRecognitionAPI.Services
             response.IsLoggedIn = true;
 
             response.IsLoggedIn = true;
-            response.JwtToken = this.GenerateTokenString(identityUser.Login, identityUser.UserRole.ToString(), identityUser.UserStatus.ToString());
+            response.JwtToken = this.GenerateTokenString(identityUser.Login, identityUser.UserRoleId.ToString(), identityUser.UserStatusId.ToString());
             response.RefreshToken = this.GenerateRefreshTokenString();
 
             identityUser.RefreshToken = response.RefreshToken;

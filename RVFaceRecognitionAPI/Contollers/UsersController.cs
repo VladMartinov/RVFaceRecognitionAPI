@@ -171,8 +171,19 @@ namespace RVFaceRecognitionAPI.Contollers
 
             if (userToUpdate == null) return NotFound("User by this ID not founded");
 
-            userToUpdate.UserRole = userCUDto.UserRole;
-            userToUpdate.UserStatus = userCUDto.UserStatus;
+            var role = _context.UserRoles.FirstOrDefault(x => x.RoleId == userCUDto.UserRoleId);
+            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == userCUDto.UserStatusId);
+
+            if (role == null || status == null)
+            {
+                return BadRequest("User role or status is not define.");
+            }
+
+            userToUpdate.UserRoleId = userCUDto.UserRoleId;
+            userToUpdate.UserRole = role;
+
+            userToUpdate.UserStatusId = userCUDto.UserStatusId;
+            userToUpdate.UserStatus = status;
             
             userToUpdate.FullName = userCUDto.FullName;
             userToUpdate.Photo = userCUDto.Photo is not null ? Convert.FromBase64String(userCUDto.Photo) : null;
