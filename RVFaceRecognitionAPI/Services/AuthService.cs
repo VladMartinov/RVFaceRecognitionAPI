@@ -26,8 +26,8 @@ namespace RVFaceRecognitionAPI.Services
 
             if (
                 identityUser == null
-                || identityUser.UserStatus == (short) UserStatusEnum.Blocked
-                || identityUser.UserStatus == (short) UserStatusEnum.Removed
+                || identityUser.UserStatusId == (uint) UserStatusEnum.Blocked
+                || identityUser.UserStatusId == (uint) UserStatusEnum.Removed
                 || !BCrypt.Net.BCrypt.Verify(user.Password, identityUser.Password)
                 ) return response;
 
@@ -58,8 +58,8 @@ namespace RVFaceRecognitionAPI.Services
 
             if (
                 identityUser is null
-                || identityUser.UserStatus == (short) UserStatusEnum.Blocked
-                || identityUser.UserStatus == (short) UserStatusEnum.Removed
+                || identityUser.UserStatusId == (uint) UserStatusEnum.Blocked
+                || identityUser.UserStatusId == (uint) UserStatusEnum.Removed
                 || identityUser.RefreshToken != model.RefreshToken
                 || identityUser.RefreshTokenExpiry < DateTime.UtcNow
                 )

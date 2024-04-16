@@ -113,10 +113,20 @@ namespace RVFaceRecognitionAPI.Contollers
             if (_context.Users.Any(x => x.Login == userCUDto.Login))
                 return StatusCode(400, $"The user with login: \"${userCUDto.Login}\" is already exist!");
 
+            var role = _context.UserRoles.FirstOrDefault(x => x.RoleId == userCUDto.UserRoleId);
+            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == userCUDto.UserStatusId);
+
+            if (role == null || status == null)
+            {
+                return BadRequest("User role or status is not define.");
+            }
+
             var user = new User
             {
-                UserRole = userCUDto.UserRole,
-                UserStatus = userCUDto.UserStatus,
+                UserRoleId = userCUDto.UserRoleId,
+                UserRole = role,
+                UserStatusId = userCUDto.UserStatusId,
+                UserStatus = status,
                 FullName = userCUDto.FullName,
                 Photo = userCUDto.Photo is not null ? Convert.FromBase64String(userCUDto.Photo) : null,
                 Login = userCUDto.Login,
@@ -203,7 +213,15 @@ namespace RVFaceRecognitionAPI.Contollers
 
             if (user == null) return NotFound("User by this ID not founded");
 
-            user.UserStatus = (ushort) UserStatusEnum.Removed;
+            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == (ushort) UserStatusEnum.Removed);
+
+            if (status == null)
+            {
+                return BadRequest("User status is not define.");
+            }
+
+            user.UserStatusId = (ushort) UserStatusEnum.Removed;
+            user.UserStatus = status;
 
             string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
 
@@ -239,7 +257,16 @@ namespace RVFaceRecognitionAPI.Contollers
 
             if (user == null) return NotFound("User by this ID not founded");
 
-            user.UserStatus = status;
+
+            var statusObj = _context.UserStatuses.FirstOrDefault(x => x.StatusId == status);
+
+            if (statusObj == null)
+            {
+                return BadRequest("User status is not define.");
+            }
+
+            user.UserStatusId = status;
+            user.UserStatus = statusObj;
 
             string login = _loggingService.GetUserLoginFromToken(Request.Cookies["AccessToken"]);
 

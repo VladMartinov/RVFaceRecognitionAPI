@@ -3,27 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RVFaceRecognitionAPI.Models
 {
-    public enum UserRoleEnum
-    {
-        User = 1,
-        Observer = 2,
-        Admin = 3
-    }
-
-    public enum UserStatusEnum
-    {
-        Active = 1,
-        Blocked = 2,
-        Removed = 3
-    }
-
     public class User
     {
         [Key]
         public uint UserId { get; set; }
 
-        public required ushort UserRole { get; set; }
-        public required ushort UserStatus { get; set; }
+        [ForeignKey(nameof(UserRole))]
+        public required ushort UserRoleId { get; set; }
+        public UserRole UserRole { get; set; }
+
+        [ForeignKey(nameof(UserStatus))]
+        public required ushort UserStatusId { get; set; }
+        public UserStatus UserStatus { get; set; }
 
         [MaxLength(155)]
         public required string FullName { get; set; }

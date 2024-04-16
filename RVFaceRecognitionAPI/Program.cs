@@ -78,7 +78,7 @@ internal class Program
             // Vue
             options.AddPolicy("vueApp", policyBuilder =>
             {
-                policyBuilder.WithOrigins("http://localhost:8080");
+                policyBuilder.WithOrigins(builder.Configuration.GetSection("VueAddress").Value);
                 policyBuilder.AllowAnyHeader();
                 policyBuilder.AllowAnyMethod();
                 policyBuilder.AllowCredentials();
@@ -106,7 +106,7 @@ internal class Program
             KeepAliveInterval = TimeSpan.FromMinutes(2)
         };
 
-        webSocketOptions.AllowedOrigins.Add("http://localhost:8080");
+        webSocketOptions.AllowedOrigins.Add(builder.Configuration.GetSection("VueAddress").Value);
 
         app.UseWebSockets(webSocketOptions);
         app.Use(async (context, next) =>
