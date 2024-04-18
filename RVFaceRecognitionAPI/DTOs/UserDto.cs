@@ -6,11 +6,8 @@ namespace RVFaceRecognitionAPI.DTOs
     {
         public uint UserId { get; set; }
 
-        public ushort UserRoleId { get; set; }
-        public UserRole? UserRole { get; set; }
-
-        public ushort UserStatusId { get; set; }
-        public UserStatus? UserStatus { get; set; }
+        public ushort UserRole { get; set; }
+        public ushort UserStatus { get; set; }
 
         public string FullName { get; set; }
         public byte[]? Photo { get; set; }
@@ -22,11 +19,8 @@ namespace RVFaceRecognitionAPI.DTOs
         {
             UserId = user.UserId;
 
-            UserRoleId = user.UserRoleId;
-            UserRole = user.UserRole;
-
-            UserStatusId = user.UserStatusId;
-            UserStatus = user.UserStatus;
+            UserRole = user.UserRoleId;
+            UserStatus = user.UserStatusId;
 
             FullName = user.FullName;
             Photo = user.Photo;

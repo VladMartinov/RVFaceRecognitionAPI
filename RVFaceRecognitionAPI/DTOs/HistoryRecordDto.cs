@@ -1,4 +1,6 @@
-﻿namespace RVFaceRecognitionAPI.Models
+﻿using RVFaceRecognitionAPI.Models;
+
+namespace RVFaceRecognitionAPI.DTOs
 {
     public class HistoryRecordDto
     {

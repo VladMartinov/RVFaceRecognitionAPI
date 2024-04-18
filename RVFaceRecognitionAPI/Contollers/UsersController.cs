@@ -113,8 +113,8 @@ namespace RVFaceRecognitionAPI.Contollers
             if (_context.Users.Any(x => x.Login == userCUDto.Login))
                 return StatusCode(400, $"The user with login: \"${userCUDto.Login}\" is already exist!");
 
-            var role = _context.UserRoles.FirstOrDefault(x => x.RoleId == userCUDto.UserRoleId);
-            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == userCUDto.UserStatusId);
+            var role = _context.UserRoles.FirstOrDefault(x => x.RoleId == userCUDto.UserRole);
+            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == userCUDto.UserStatus);
 
             if (role == null || status == null)
             {
@@ -123,9 +123,9 @@ namespace RVFaceRecognitionAPI.Contollers
 
             var user = new User
             {
-                UserRoleId = userCUDto.UserRoleId,
+                UserRoleId = userCUDto.UserRole,
                 UserRole = role,
-                UserStatusId = userCUDto.UserStatusId,
+                UserStatusId = userCUDto.UserStatus,
                 UserStatus = status,
                 FullName = userCUDto.FullName,
                 Photo = userCUDto.Photo is not null ? Convert.FromBase64String(userCUDto.Photo) : null,
@@ -171,18 +171,18 @@ namespace RVFaceRecognitionAPI.Contollers
 
             if (userToUpdate == null) return NotFound("User by this ID not founded");
 
-            var role = _context.UserRoles.FirstOrDefault(x => x.RoleId == userCUDto.UserRoleId);
-            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == userCUDto.UserStatusId);
+            var role = _context.UserRoles.FirstOrDefault(x => x.RoleId == userCUDto.UserRole);
+            var status = _context.UserStatuses.FirstOrDefault(x => x.StatusId == userCUDto.UserStatus);
 
             if (role == null || status == null)
             {
                 return BadRequest("User role or status is not define.");
             }
 
-            userToUpdate.UserRoleId = userCUDto.UserRoleId;
+            userToUpdate.UserRoleId = userCUDto.UserRole;
             userToUpdate.UserRole = role;
 
-            userToUpdate.UserStatusId = userCUDto.UserStatusId;
+            userToUpdate.UserStatusId = userCUDto.UserStatus;
             userToUpdate.UserStatus = status;
             
             userToUpdate.FullName = userCUDto.FullName;
