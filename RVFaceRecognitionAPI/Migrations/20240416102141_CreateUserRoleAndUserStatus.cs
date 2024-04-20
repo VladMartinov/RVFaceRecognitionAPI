@@ -80,7 +80,7 @@ namespace RVFaceRecognitionAPI.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "UserId", "UserRoleId", "UserStatusId", "FullName", "Photo", "Login", "Password" },
-                values: new object[] { 1, 3, 1, "Admin", null, "rvtech\\admin", "P@ssw0rd" });
+                values: new object[] { 1, 3, 1, "Admin", null, "rvtech\\admin", BCrypt.Net.BCrypt.HashPassword("P@ssw0rd") });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_UserRoleId",
