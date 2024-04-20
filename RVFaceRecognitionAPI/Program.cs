@@ -19,6 +19,17 @@ internal class Program
         builder.Services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
         ServiceProvider serviceProvider = builder.Services.BuildServiceProvider();
+        
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var _context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
+
+            if (_context.Database.GetPendingMigrations().Any())
+            {
+                _context.Database.Migrate();
+            }
+        }
+
         var streamService = new StreamService(serviceProvider);
 
         builder.Services.AddSingleton(streamService); // Регистрация SteamService в контейнере DI

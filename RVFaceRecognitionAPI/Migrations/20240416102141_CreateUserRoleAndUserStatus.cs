@@ -77,6 +77,11 @@ namespace RVFaceRecognitionAPI.Migrations
                 columns: new[] { "StatusId", "StatusTitle" },
                 values: new object[] { 3, "Удалён" });
 
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "UserId", "UserRoleId", "UserStatusId", "FullName", "Photo", "Login", "Password" },
+                values: new object[] { 1, 3, 1, "Admin", null, "rvtech\\admin", "P@ssw0rd" });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Users_UserRoleId",
                 table: "Users",
