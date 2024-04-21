@@ -265,8 +265,8 @@ namespace RVFaceRecognitionAPI.Services
                 trainedImage.Dispose();
             }
 
-            if (_maxWidth % 2 != 0) _maxWidth -= 1;
-            if (_maxHeight % 2 != 0) _maxHeight -= 1;
+            if (_maxWidth % 4 != 0) _maxWidth += 4 - _maxWidth % 4;
+            if (_maxHeight % 4 != 0) _maxHeight += 4 - _maxHeight % 4;
 
             try
             {
