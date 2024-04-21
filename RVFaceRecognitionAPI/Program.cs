@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RVFaceRecognitionAPI.Models;
-using System.Reflection;
-using System.Text;
 using RVFaceRecognitionAPI.Services;
 using System.Net.WebSockets;
+using System.Reflection;
+using System.Text;
 
 internal class Program
 {

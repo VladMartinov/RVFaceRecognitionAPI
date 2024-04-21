@@ -2,7 +2,6 @@
 using RVFaceRecognitionAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Principal;
 using System.Text;
 
 namespace RVFaceRecognitionAPI.Services
@@ -18,6 +17,7 @@ namespace RVFaceRecognitionAPI.Services
             _configuration = configuration;
         }
 
+        /* Метод по добавлению записи активности в базу данных */
         public async Task AddHistoryRecordAsync(User user, TypeActionEnum typeActionEnum)
         {
             var action = _applicationContext.TypeActions.FirstOrDefault(x => x.ActionId == (uint) typeActionEnum);
@@ -35,6 +35,7 @@ namespace RVFaceRecognitionAPI.Services
             await _applicationContext.SaveChangesAsync();
         }
 
+        /* Метод по получению логина пользователя из токена */
         public string? GetUserLoginFromToken(string token)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("Jwt:Key").Value ?? ""));

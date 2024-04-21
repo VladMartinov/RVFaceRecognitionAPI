@@ -19,6 +19,7 @@ namespace RVFaceRecognitionAPI.Services
             _configuration = configuration;
         }
 
+        /* Метод по авториазции пользователя */
         public async Task<LoginResponse> Login(LoginUser user)
         {
             var response = new LoginResponse();
@@ -46,6 +47,7 @@ namespace RVFaceRecognitionAPI.Services
             return response;
         }
 
+        /* Метод по генирации токена обновления */
         public async Task<LoginResponse> RefreshToken(RefreshTokenModel model)
         {
             var principal = this.GetTokenPrincipal(model.JwtToken);
@@ -76,6 +78,7 @@ namespace RVFaceRecognitionAPI.Services
             return response;
         }
 
+        /* Метод по получению контекста безопасности */
         private ClaimsPrincipal? GetTokenPrincipal(string token)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("Jwt:Key").Value ?? ""));
@@ -92,6 +95,7 @@ namespace RVFaceRecognitionAPI.Services
             return new JwtSecurityTokenHandler().ValidateToken(token, validationParameters, out _);
         }
 
+        /* Метод по генерации токена обновления */
         private string GenerateRefreshTokenString()
         {
             var randomNumber = new byte[64];
@@ -103,6 +107,7 @@ namespace RVFaceRecognitionAPI.Services
             return refreshToken;
         }
 
+        /* Метод по генерации токена доступа */
         private string GenerateTokenString(string login, string role, string status)
         {
             var claims = new List<Claim>()

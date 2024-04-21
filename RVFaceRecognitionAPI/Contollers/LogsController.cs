@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RVFaceRecognitionAPI.DTOs;
 using RVFaceRecognitionAPI.Models;
-using RVFaceRecognitionAPI.Services;
 
 namespace RVFaceRecognitionAPI.Contollers
 {

@@ -1,15 +1,14 @@
-﻿using Emgu.CV.Structure;
-using Emgu.CV;
-
-using System.Drawing.Imaging;
-using System.Net.WebSockets;
-using System.Drawing;
-using System.Reflection;
+﻿using Emgu.CV;
 using Emgu.CV.CvEnum;
+using Emgu.CV.Face;
+using Emgu.CV.Structure;
+using Emgu.CV.Util;
 using Microsoft.IdentityModel.Tokens;
 using RVFaceRecognitionAPI.Models;
-using Emgu.CV.Face;
-using Emgu.CV.Util;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Net.WebSockets;
+using System.Reflection;
 
 namespace RVFaceRecognitionAPI.Services
 {
@@ -63,6 +62,7 @@ namespace RVFaceRecognitionAPI.Services
         }
 
         #region - Public Functions -
+        /* Метод по отправке обработанных и проанализированных кадров клиентам */
         public async Task SendImageToWebSocket(WebSocket webSocket, CancellationToken cancellationToken)
         {
             while (webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
@@ -166,6 +166,7 @@ namespace RVFaceRecognitionAPI.Services
             }
         }
 
+        /* Метод по получению первого обнаруженного лица на кадре */
         public async Task<string> GetFirstDetectedFace()
         {
             DateTime startTime = DateTime.UtcNow;
@@ -193,6 +194,7 @@ namespace RVFaceRecognitionAPI.Services
         #endregion
 
         #region - Private Functions -
+        /* Метод по получению кадров с камеры */
         private async void ProcessFrame(object sender, EventArgs e)
         {
             if (_videoCapture != null && _videoCapture.Ptr != IntPtr.Zero)
@@ -204,6 +206,7 @@ namespace RVFaceRecognitionAPI.Services
             }
         }
 
+        /* Метод извлечения файлов из ресурса проекта */
         private string ExtractResourceToFile(string resourceName, string fileName)
         {
             var assembly = Assembly.GetExecutingAssembly();
@@ -224,6 +227,7 @@ namespace RVFaceRecognitionAPI.Services
             return filePath;
         }
 
+        /* Метод обучения модели на изображениях из базы данных */
         private void TrainByImagesFromDataBase()
         {
             if (_recognizer is not null)
